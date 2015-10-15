@@ -26,8 +26,13 @@ Some of these instructions were lifted from https://github.com/esp8266/Arduino. 
    * Mac: ````~/Library/Arduino15/packages/esp8266/hardware/esp8266/1.6.5-1160-gef26c5f/libraries/ESP8266WebServer/src/````
    * GNU/Linux ?: ````~/.arduino15/packages/esp8266/hardware/esp8266/1.6.5-1160-gef26c5f/libraries/ESP8266WebServer/src/````
    * Windows ?: ````%APPDATA%\Arduino15\packages\esp8266\hardware\esp8266\1.6.5-1160-gef26c5f\libraries\ESP8266WebServer\src\````
-7. Connect your ESP8266 to your computer.
-8. Open the server/server.ino file in the Arduino IDE. Set the communication port in the Tools > Port menu.
-9. That's it! Upload the sketch to your device (Sketch > Upload).
+7. Install ArduinoJson Library with Library Manager
+    - In Arduino IDE (since version 1.6.2) goto Sketch Tab -> Include Library -> Manage Libraries 
+    - Search for ArduinoJson and click on it 
+    - Select version and click install
+    - For more info see [wiki](https://github.com/bblanchon/ArduinoJson/wiki/Using%20the%20library%20with%20Arduino)
+8. Connect your ESP8266 to your computer.
+9. Open the server/server.ino file in the Arduino IDE. Set the communication port in the Tools > Port menu.
+10. That's it! Upload the sketch to your device (Sketch > Upload).
 
 **If you are not using an SD card, follow [this guide](http://arduino.esp8266.com/versions/1.6.5-1160-gef26c5f/doc/reference.html#uploading-files-to-file-system) to install ESP8266FS and store the data directory on your device's flash memory.**
