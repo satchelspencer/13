@@ -16,17 +16,18 @@ Refer to the [Sparkfun ESP8266 Thing Hookup Guide](https://learn.sparkfun.com/tu
 
 ## Running the code
 Some of these instructions were lifted from https://github.com/esp8266/Arduino. Go check out the project that lets us program this tiny chip in a familiar language.
+
 1. [Download](https://www.arduino.cc/en/main/software) and install the Arduino IDE. (version 1.6.5)
 2. Start Arduino and open Preferences window.
 3. Enter http://arduino.esp8266.com/staging/package_esp8266com_index.json into Additional Board Manager URLs field. **It is important that you use the staging version because we use features not yet included in the stable version.**
 4. Open Boards Manager from Tools > Board menu and install the esp8266 platform. Don't forget to select your ESP8266 board from Tools > Board menu after installation.
 5. [Download](https://github.com/satchelspencer/13/archive/master.zip) the latest version of our code.
-6. Replace the installed Arduino library files with the new versions in the replacements folder. **Our code will not run without these changes.** I will update this soon with instructions for building from our fork. Also see esp8266/Arduino#886
+6. Replace the installed Arduino library files with the new versions in the replacements folder. **Our code will not run without these changes.** I will update this soon with instructions for building from our fork. Also see [esp8266/Arduino#886](https://github.com/esp8266/Arduino/pull/886)
    * Mac: ````~/Library/Arduino15/packages/esp8266/hardware/esp8266/1.6.5-1160-gef26c5f/libraries/ESP8266WebServer/src/````
    * GNU/Linux ?: ````~/.arduino15/packages/esp8266/hardware/esp8266/1.6.5-1160-gef26c5f/libraries/ESP8266WebServer/src/````
    * Windows ?: ````%APPDATA%\Arduino15\packages\esp8266\hardware\esp8266\1.6.5-1160-gef26c5f\libraries\ESP8266WebServer\src\````
 7. Connect your ESP8266 to your computer.
-8. Open the server.ino file. Set the communication port in the Tools > Port menu.
+8. Open the server/server.ino file in the Arduino IDE. Set the communication port in the Tools > Port menu.
 9. That's it! Upload the sketch to your device (Sketch > Upload).
 
 **If you are not using an SD card, follow [this guide](http://arduino.esp8266.com/versions/1.6.5-1160-gef26c5f/doc/reference.html#uploading-files-to-file-system) to install ESP8266FS and store the data directory on your device's flash memory.**
