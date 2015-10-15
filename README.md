@@ -30,9 +30,9 @@ Some of these instructions were lifted from https://github.com/esp8266/Arduino. 
     - In Arduino IDE (since version 1.6.2) goto Sketch Tab -> Include Library -> Manage Libraries 
     - Search for ArduinoJson and click on it 
     - Select version and click install
-8. [Download](https://github.com/brianensor/ESP8266TrueRandom/archive/fix-naming.zip) the ESP8266TrueRandom library.
+8. [Download](https://github.com/marvinroger/ESP8266TrueRandom/archive/master.zip) the ESP8266TrueRandom library.
     - In the Arduino IDE, go to Sketch > Include Library > Add .ZIP Library...
-    - Select the ESP8266TrueRandom-fix-naming.zip (Currently our fork. See [marvinroger/ESP8266TrueRandom#886](https://github.com/marvinroger/ESP8266TrueRandom/pull/1))
+    - Select the ESP8266TrueRandom-master.zip
     - Click Choose to install the library
 9. Connect your ESP8266 to your computer.
 10. Open the server/server.ino file in the Arduino IDE. Set the communication port in the Tools > Port menu.
