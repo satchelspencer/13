@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Dashboard</title>
+	<script type="text/javascript" src="zepto.min.js"></script>
+	<script>
+		$(document).ready(function() {
+			$('#logout_button').on('click', function(e) {
+				$.ajax({
+					type: 'GET',
+					url: '/api/logout',
+					dataType: 'json',
+					success: function(data, status, xhr) {
+						window.location.replace("login.html");
+					},
+					error: function(xhr, errorType, error) {
+						alert('Server error');
+					}
+				});
+			});
+		});
+	</script>
+</head>
+<body>
+	<h1>Dashboard</h1>
+	<span>Logged in as </span><strong>{{username}}</strong>
+	<button type="button" id="logout_button">Log out</button>
+</body>
+</html>

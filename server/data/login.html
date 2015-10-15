@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Login</title>
+	<script type="text/javascript" src="zepto.min.js"></script>
+	<script>
+		$(document).ready(function() {
+			var loginForm = $('#login_form');
+			loginForm.submit(function(e) {
+				e.preventDefault();
+				$.ajax({
+					type: 'POST',
+					url: '/api/login',
+					data: loginForm.serialize(),
+					dataType: 'json',
+					success: function(data, status, xhr) {
+						if (data.success) {
+							$('#invalid_credentials').hide();
+							$('#no_connections').hide();
+							window.location.replace("dashboard.html");
+						} else {
+							if (data.error == 1) {
+								$('#invalid_credentials').show();
+								$('#no_connections').hide();
+							} else if (data.error == 2) {
+								$('#invalid_credentials').hide();
+								$('#no_connections').show();
+							}
+						}
+					},
+					error: function(xhr, errorType, error) {
+						alert('Server error');
+					}
+				});
+			});
+		});
+	</script>
+</head>
+<body>
+	<h1>Team 13 Login</h1>
+	<div id="invalid_credentials" style="display:none;">
+		<strong style="color:red">Invalid username or password</strong><br><br>
+	</div>
+	<div id="no_connections" style="display:none;">
+		<strong style="color:red">No connections available</strong><br><br>
+	</div>
+	<form id="login_form" autocapitalize="none">
+		<label for="username">Username (8 characters max):</label><br>
+		<input type="text" name="username" id="username" autocorrect="off" maxlength="8" autofocus required><br>
+		<label for="password">Password: (16 characters max):</label><br>
+		<input type="password" name="password" id="password" autocorrect="off" maxlength="16" required><br><br>
+		<input type="submit">
+	</form>
+</body>
+</html>
