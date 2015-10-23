@@ -5,4 +5,7 @@ class database{
 		String remove(String id);
 		String find(String id);
 		String update(String id, String data);
+	private:
+		String uniqueId();
+		bool writeFile(String path, String data);
 };
