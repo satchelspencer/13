@@ -13,6 +13,7 @@ const char ServerURL[] = "http://192.168.1.1/";
 const int MAX_SESSIONS = 4;
 String sessions[MAX_SESSIONS][2];
 int sessionCount = 0;
+int websockets[MAX_SESSIONS]; //contains websocet numbers given a session index
 const String COOKIE_KEY = "SessionID=";
 ESP8266WebServer server(80);
 WebSocketsServer wsServer(81);
@@ -66,6 +67,13 @@ void removeSession(int sessionIndex) {
 int sessionIndexFromID(String sessionID) {
   for (int i = 0; i < sessionCount; i++) {
     if (sessions[i][0] == sessionID) return i;
+  }
+  return -1;
+}
+
+int sessionIndexFromWebsocket(int num) {
+  for (int i = 0; i < sessionCount; i++) {
+    if (websockets[i] == num) return i;
   }
   return -1;
 }
@@ -276,7 +284,26 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
         startIndex = index + 1;
         index = payloadString.indexOf(":", startIndex);
       }
-      wsServer.sendTXT(num, "protocol: " + data[0] + ", command: " + data[1] + ", text: " + data[2]);
+      /* 
+       *  data[0] is protocol
+       *  data[1] is command
+       *  data[2] is body
+       */
+      if(data[0] == "chat" && data[1] == "connect"){
+        int index = sessionIndexFromID(data[2]); //get session index
+        if(index != -1){
+          sessions[index][2] = num; //associate session with websocket number
+           wsServer.sendTXT(num, "success");
+        }else wsServer.sendTXT(num, "invalid sessionID");
+      }else{
+        int sessionIndex = sessionIndexFromWebsocket(num);
+        if(sessionIndex == -1) wsServer.sendTXT(num, "not authenticated");
+        else{
+          /* authenticated */
+          Serial.println(sessionIndex);
+          wsServer.sendTXT(num, "you are: "+sessions[sessionIndex][1]);
+        }
+      }
       break;
   }
 }

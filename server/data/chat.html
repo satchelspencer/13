@@ -22,7 +22,7 @@
 					setTimeout(function() {
 						$('#connection').hide();
 					}, 3000);
-					sendCommand('connect', myUsername);
+					sendCommand('connect', document.cookie.split('=')[1]); //connect with sessionID(feom cookie)
 				};
 				websocket.onclose = function(evt) {
 					$('#connection').html('Disconnected');
