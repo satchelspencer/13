@@ -265,23 +265,16 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
     case WStype_DISCONNECTED:
       break;
     case WStype_TEXT:
-      String payloadString = String((char *)payload);
+      String payloadString = String((char *)payload)+":";
       String data[3];
       int startIndex = 0;
       int index = payloadString.indexOf(":");
       int pieces = 0;
-      int len = payloadString.length();
-      int go = 1;
-      while (go) {
+      while (index != -1) {
         String piece = payloadString.substring(startIndex, index);
-        Serial.println(piece+" "+startIndex+" "+index);
         data[pieces++] = piece;
         startIndex = index + 1;
-        if(index == len) go = 0;
-        else{
-          index = payloadString.indexOf(":", startIndex);
-          if(index == -1) index = len;
-        }
+        index = payloadString.indexOf(":", startIndex);
       }
       wsServer.sendTXT(num, "protocol: " + data[0] + ", command: " + data[1] + ", text: " + data[2]);
       break;
