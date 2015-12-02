@@ -270,11 +270,18 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
       int startIndex = 0;
       int index = payloadString.indexOf(":");
       int pieces = 0;
-      while (index != -1) {
+      int len = payloadString.length();
+      int go = 1;
+      while (go) {
         String piece = payloadString.substring(startIndex, index);
+        Serial.println(piece+" "+startIndex+" "+index);
         data[pieces++] = piece;
         startIndex = index + 1;
-        index = payloadString.indexOf(":", startIndex);
+        if(index == len) go = 0;
+        else{
+          index = payloadString.indexOf(":", startIndex);
+          if(index == -1) index = len;
+        }
       }
       wsServer.sendTXT(num, "protocol: " + data[0] + ", command: " + data[1] + ", text: " + data[2]);
       break;
