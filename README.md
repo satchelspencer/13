@@ -40,4 +40,4 @@ Some of these instructions were lifted from https://github.com/esp8266/Arduino. 
 11. Open the server/server.ino file in the Arduino IDE. Set the communication port in the Tools > Port menu.
 12. That's it! Upload the sketch to your device (Sketch > Upload).
 
-**If you are not using an SD card, follow [this guide](http://arduino.esp8266.com/versions/1.6.5-1160-gef26c5f/doc/reference.html#uploading-files-to-file-system) to install ESP8266FS and store the data directory on your device's flash memory.**
+**If you are not using an SD card, follow [this guide](http://esp8266.github.io/Arduino/versions/2.0.0/doc/filesystem.html#uploading-files-to-file-system) to install ESP8266FS and store the data directory on your device's flash memory.**
