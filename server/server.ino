@@ -4,6 +4,7 @@
 #include <ArduinoJson.h>
 #include <ESP8266TrueRandom.h>
 #include <Hash.h>
+#include <WebSocketsServer.h>
 
 const char WifiAPSSID[] = "3308-13";
 IPAddress WifiAPIP(192, 168, 1, 1);
@@ -14,6 +15,7 @@ String sessions[MAX_SESSIONS][2];
 int sessionCount = 0;
 const String COOKIE_KEY = "SessionID=";
 ESP8266WebServer server(80);
+WebSocketsServer wsServer(81);
 
 /*
 Filesystem functions
@@ -203,7 +205,14 @@ bool handleAdminRequest(String path, int sessionIndex) {
     }
     message += "</table></body></html>";
     server.send(200, "text/html", message);
-  } else return false;
+  }/* else if (path == "WebSocketTest.html") {
+    File f = openFileR(path);
+    if (f) {
+      String contentType = getContentType(path);
+      server.streamFile(f, contentType);
+      f.close();
+    }
+  }*/ else return false;
   return true;
 }
 
@@ -234,15 +243,42 @@ bool handleRequest(String path) {
   if (f) {
     if (gz) path = path.substring(0, path.length() - 3);
     String contentType = getContentType(path);
-    if (path == "/dashboard.html") {
-      String dashboardHTML = f.readString();
-      dashboardHTML.replace("{{username}}", sessions[sessionIndex][1]);
-      server.send(200, contentType, dashboardHTML);
+    if (path == "/dashboard.html" || path == "/chat.html") {
+      String htmlString = f.readString();
+      htmlString.replace("{{username}}", sessions[sessionIndex][1]);
+      server.send(200, contentType, htmlString);
     } else server.streamFile(f, contentType);
     f.close();
     return true;
   }
   return false;
+}
+
+/*
+WebSocket functions
+*/
+
+void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length) {
+  switch (type) {
+    case WStype_CONNECTED:
+      break;
+    case WStype_DISCONNECTED:
+      break;
+    case WStype_TEXT:
+      String payloadString = String((char *)payload);
+      String data[3];
+      int startIndex = 0;
+      int index = payloadString.indexOf(":");
+      int pieces = 0;
+      while (index != -1) {
+        String piece = payloadString.substring(startIndex, index);
+        data[pieces++] = piece;
+        startIndex = index + 1;
+        index = payloadString.indexOf(":", startIndex);
+      }
+      wsServer.sendTXT(num, "protocol: " + data[0] + ", command: " + data[1] + ", text: " + data[2]);
+      break;
+  }
 }
 
 /*
@@ -279,9 +315,12 @@ void setup() {
 
   // Start the server
   server.begin();
+  wsServer.begin();
+  wsServer.onEvent(webSocketEvent);
   Serial.println("Server started");
 }
 
 void loop() {
   server.handleClient();
+  wsServer.loop();
 }
