@@ -3,59 +3,26 @@
 <head>
 	<title>Chat</title>
 	<script type="text/javascript" src="zepto.min.js"></script>
+	<script type="text/javascript" src="websockets.js"></script>
 	<script>
 		Zepto(function($) {
-			var myUsername = $('#username').html();
-			console.log($('#username'));
-			console.log($('#username').html());
+			var socket = websocket('ws://192.168.1.1:81', 'chat');
 
-			if (window.WebSocket) {
-				connectToWebSocket();
-			} else {
-				console.log('WebSockets not supported');
-			}
+			socket.error(function(error){
+				console.log('websocket error:'+error);
+			});
 
-			function connectToWebSocket() {
-				websocket = new WebSocket('ws://192.168.1.1:81');
-				websocket.onopen = function(evt) {
-					$('#connection').html('Connected');
-					setTimeout(function() {
-						$('#connection').hide();
-					}, 3000);
-					sendCommand('connect', document.cookie.split('=')[1]); //connect with sessionID(feom cookie)
-				};
-				websocket.onclose = function(evt) {
-					$('#connection').html('Disconnected');
-					$('#connection').show();
-				};
-				websocket.onmessage = function(evt) {
-					addMessage('RESPONSE', evt.data);
-				};
-				websocket.onerror = function(evt) {
-					addMessage('ERROR', evt.data);
-				};
-			}
+			socket.ready(function(){
+				console.log('websocket ready!');
+			});
 
-			function escapeHtml(text) {
-				var map = {
-					'&': '&amp;',
-					'<': '&lt;',
-					'>': '&gt;',
-					'"': '&quot;',
-					"'": '&#039;'
-				};
-				return text.replace(/[&<>"']/g, function(m) { return map[m]; });
-			}
+			socket.on('message', function(message){
+				$('#messages').append(message+'<br>');
+			});
 
-			function sendCommand(command, text) {
-				message = 'chat:' + command + ':' + escapeHtml(text);
-				websocket.send(message);
-			}
-
-			function sendMessage(message) {
-				addMessage(myUsername, message);
-				sendCommand('message', message);
-			}
+			$('.send').click(function(){
+				socket.send('message', $('.chat').val());
+			});
 
 			function addMessage(username, message) {
 				messageElement = '<p class="message"><strong class="username';
@@ -71,7 +38,7 @@
 <body>
 	<h1>Chat</h1>
 	<span>Logged in as </span><strong id="username">{{username}}</strong>
-	<p id="connection">Connecting to server</p>
+	<input type="text" class="chat"><span class="send">send</span>
 	<div id="messages"></div>
 </body>
 </html>

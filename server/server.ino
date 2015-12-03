@@ -289,19 +289,22 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
        *  data[1] is command
        *  data[2] is body
        */
-      if(data[0] == "chat" && data[1] == "connect"){
-        int index = sessionIndexFromID(data[2]); //get session index
+      if(data[0] == "global" && data[1] == "connect"){
+        int index = sessionIndexFromID(data[2]); //get session index 
         if(index != -1){
-          sessions[index][2] = num; //associate session with websocket number
-           wsServer.sendTXT(num, "success");
-        }else wsServer.sendTXT(num, "invalid sessionID");
+          websockets[index] = num; //associate session with websocket number
+           wsServer.sendTXT(num, "global:connect:success");
+        }else wsServer.sendTXT(num, "global:connect:fail");
       }else{
         int sessionIndex = sessionIndexFromWebsocket(num);
         if(sessionIndex == -1) wsServer.sendTXT(num, "not authenticated");
         else{
-          /* authenticated */
-          Serial.println(sessionIndex);
-          wsServer.sendTXT(num, "you are: "+sessions[sessionIndex][1]);
+          /* authenticated, catch commands here */
+          if(data[0] == "chat" && data[1] == "message"){
+            for (int i = 0; i < sessionCount; i++) {
+              wsServer.sendTXT(websockets[i], "chat:message:"+data[2]);
+            }
+          }
         }
       }
       break;
