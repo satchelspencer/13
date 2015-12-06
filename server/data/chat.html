@@ -23,15 +23,6 @@
 			$('.send').click(function(){
 				socket.send('message', $('.chat').val());
 			});
-
-			function addMessage(username, message) {
-				messageElement = '<p class="message"><strong class="username';
-				if (username == myUsername) {
-					messageElement += ' me';
-				}
-				messageElement += '">' + username + '</strong>: ' + escapeHtml(message) + '</p>';
-				$('#messages').append(messageElement);
-			}
 		});
 	</script>
 </head>
