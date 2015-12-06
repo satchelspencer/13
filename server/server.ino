@@ -6,7 +6,7 @@
 #include <Hash.h>
 #include <WebSocketsServer.h>
 
-const char WifiAPSSID[] = "tttt";
+const char WifiAPSSID[] = "3308-13";
 IPAddress WifiAPIP(192, 168, 1, 1);
 const char WifiDOMAIN[] = "192.168.1.1";
 const char ServerURL[] = "http://192.168.1.1/";
@@ -273,17 +273,23 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
     case WStype_DISCONNECTED:
       break;
     case WStype_TEXT:
-      String payloadString = String((char *)payload)+":";
+      String payloadString = String((char *)payload);
       String data[3];
       int startIndex = 0;
       int index = payloadString.indexOf(":");
       int pieces = 0;
+      int count = 0;
       while (index != -1) {
         String piece = payloadString.substring(startIndex, index);
         data[pieces++] = piece;
         startIndex = index + 1;
+        if (pieces == 2) {
+          index++;
+          break;
+        }
         index = payloadString.indexOf(":", startIndex);
       }
+      data[2] = payloadString.substring(index, payloadString.length());
       /* 
        *  data[0] is protocol
        *  data[1] is command
@@ -302,7 +308,8 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
           /* authenticated, catch commands here */
           if(data[0] == "chat" && data[1] == "message"){
             for (int i = 0; i < sessionCount; i++) {
-              wsServer.sendTXT(websockets[i], "chat:message:"+sessions[i][1]+":"+data[2]);
+              //wsServer.sendTXT(websockets[i], "chat:message:"+sessions[i][1]+":"+data[2]);
+              wsServer.sendTXT(websockets[i], "chat:message:"+data[2]);
             }
           }
         }
@@ -321,7 +328,6 @@ void setup() {
   Serial.println();
 
   // Setup WiFi
-  WiFi.mode(WIFI_OFF);
   WiFi.mode(WIFI_AP);
   WiFi.softAPConfig(WifiAPIP, WifiAPIP, IPAddress(255, 255, 255, 0));
   WiFi.softAP(WifiAPSSID);
