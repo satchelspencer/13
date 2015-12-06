@@ -34,7 +34,8 @@ var websocket = function(host, protocol){
 		socket.send('global:connect:'+document.cookie.split('=')[1]);
 	};
 	socket.onmessage = function(evt){
-		var chunks = decodeURIComponent(evt.data).split(':');
+		var chunks = evt.data.split(':');
+		chunks[2] = decodeURIComponent(chunks[2]);
 		/* listen for response from initial connect */
 		if(chunks[0] == 'global' && chunks[1] == 'connect'){
 			/* if message is not 'success' callback with error */
