@@ -203,12 +203,8 @@ bool handleAPIRequest(String path, int sessionIndex) {
 }
 
 bool handleRedirects(String path, int sessionIndex) {
-  if (path == "/") {
-    sendRedirect(307, "dashboard.html");
-  } else if (path == "/dashboard.html" && sessionIndex == -1) {
-    sendRedirect(303, "login.html");
-  } else if (path == "/login.html" && sessionIndex != -1) {
-    sendRedirect(303, "dashboard.html");
+  if (sessionIndex == -1 && !path.endsWith(".js") && !path.endsWith(".css") && path != "/login.html" && path != "/api/login") {
+    sendRedirect(307, "login.html");
   } else return false;
   return true;
 }
