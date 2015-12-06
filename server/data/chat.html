@@ -6,6 +6,21 @@
 	<script type="text/javascript" src="websockets.js"></script>
 	<script>
 		Zepto(function($) {
+			$.ajax({
+				type: 'GET',
+				url: '/api/whoami',
+				success: function(data, status, xhr) {
+					if (data.success) {
+						$('#username').text(data.username);
+					} else {
+						alert('Server error');
+					}
+				},
+				error: function(xhr, errorType, error) {
+					alert('Server error');
+				}
+			});
+
 			var socket = websocket('ws://192.168.1.1:81', 'chat');
 
 			socket.error(function(error){
@@ -28,7 +43,7 @@
 </head>
 <body>
 	<h1>Chat</h1>
-	<span>Logged in as </span><strong id="username">{{username}}</strong>
+	<span>Logged in as </span><strong id="username"></strong>
 	<input type="text" class="chat"><span class="send">send</span>
 	<div id="messages"></div>
 </body>

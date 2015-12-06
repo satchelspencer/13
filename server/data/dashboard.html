@@ -4,7 +4,21 @@
 	<title>Dashboard</title>
 	<script type="text/javascript" src="zepto.min.js"></script>
 	<script>
-		$(document).ready(function() {
+		Zepto(function($) {
+			$.ajax({
+				type: 'GET',
+				url: '/api/whoami',
+				success: function(data, status, xhr) {
+					if (data.success) {
+						$('#username').text(data.username);
+					} else {
+						alert('Server error');
+					}
+				},
+				error: function(xhr, errorType, error) {
+					alert('Server error');
+				}
+			});
 			$('#logout_button').on('click', function(e) {
 				$.ajax({
 					type: 'GET',
@@ -23,7 +37,7 @@
 </head>
 <body>
 	<h1>Dashboard</h1>
-	<span>Logged in as </span><strong>{{username}}</strong>
+	<span>Logged in as </span><strong id="username"></strong>
 	<button type="button" id="logout_button">Log out</button>
 </body>
 </html>

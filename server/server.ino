@@ -187,6 +187,16 @@ void sendRedirect(int code, String path) {
   server.send(code);
 }
 
+String handleWhoAmI(int sessionIndex) {
+  const int BUFFER_SIZE = JSON_OBJECT_SIZE(2);
+  StaticJsonBuffer<BUFFER_SIZE> jsonBuffer;
+  JsonObject& root = jsonBuffer.createObject();
+  root["success"] = true;
+  root["username"] = (sessions[sessionIndex][1]).c_str();
+  // {"success":true,"username":"12345678"}\0 = 39 chars
+  return jsonEncode(root, 39);
+}
+
 /*
 HTTP request handler functions
 */
@@ -197,6 +207,7 @@ bool handleAPIRequest(String path, int sessionIndex) {
   String returnJSON;
   if (path == "login") returnJSON = handleLogin();
   else if (path == "logout") returnJSON = handleLogout(sessionIndex);
+  else if (path == "whoami") returnJSON = handleWhoAmI(sessionIndex);
   else return false;
   server.send(200, "application/json", returnJSON);
   return true;
@@ -224,11 +235,7 @@ bool handleRequest(String path) {
   if (f) {
     if (gz) path = path.substring(0, path.length() - 3);
     String contentType = getContentType(path);
-    if (path == "/dashboard.html" || path == "/chat.html") {
-      String htmlString = f.readString();
-      htmlString.replace("{{username}}", sessions[sessionIndex][1]);
-      server.send(200, contentType, htmlString);
-    } else server.streamFile(f, contentType);
+    server.streamFile(f, contentType);
     f.close();
     return true;
   }
@@ -263,26 +270,26 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
         index = payloadString.indexOf(":", startIndex);
       }
       data[2] = payloadString.substring(index, payloadString.length());
-      /* 
+      /*
        *  data[0] is protocol
        *  data[1] is command
        *  data[2] is body
        */
-      if(data[0] == "global" && data[1] == "connect"){
-        int index = sessionIndexFromID(data[2]); //get session index 
-        if(index != -1){
+      if (data[0] == "global" && data[1] == "connect") {
+        int index = sessionIndexFromID(data[2]); //get session index
+        if (index != -1) {
           websockets[index] = num; //associate session with websocket number
-           wsServer.sendTXT(num, "global:connect:success");
-        }else wsServer.sendTXT(num, "global:connect:fail");
-      }else{
+          wsServer.sendTXT(num, "global:connect:success");
+        } else wsServer.sendTXT(num, "global:connect:fail");
+      } else {
         int sessionIndex = sessionIndexFromWebsocket(num);
-        if(sessionIndex == -1) wsServer.sendTXT(num, "not authenticated");
-        else{
+        if (sessionIndex == -1) wsServer.sendTXT(num, "not authenticated");
+        else {
           /* authenticated, catch commands here */
-          if(data[0] == "chat" && data[1] == "message"){
+          if (data[0] == "chat" && data[1] == "message") {
             for (int i = 0; i < sessionCount; i++) {
               //wsServer.sendTXT(websockets[i], "chat:message:"+sessions[i][1]+":"+data[2]);
-              wsServer.sendTXT(websockets[i], "chat:message:"+data[2]);
+              wsServer.sendTXT(websockets[i], "chat:message:" + data[2]);
             }
           }
         }
