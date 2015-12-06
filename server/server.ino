@@ -202,28 +202,6 @@ bool handleAPIRequest(String path, int sessionIndex) {
   return true;
 }
 
-// I'll probably end up getting rid of this one soon in favor of some sort of permission system
-bool handleAdminRequest(String path, int sessionIndex) {
-  if (!(path.startsWith("/admin/")) || sessions[sessionIndex][1] != "admin") return false;
-  path = path.substring(7);
-  if (path == "sessions.html") {
-    String message = "<!DOCTYPE html><html><head><title>Sessions</title><style>table,th,td{border:1px solid black;border-collapse:collapse;}th,td{padding:5px;}</style></head><body><h1>Sessions</h1><table style=\"width:100%\"><tr><th>Session ID</th><th>Username</th></tr>";
-    for (int i = 0; i < sessionCount; i++) {
-      message += "<tr><td>" + sessions[i][0] + "</td><td>" + sessions[i][1] + "</td></tr>";
-    }
-    message += "</table></body></html>";
-    server.send(200, "text/html", message);
-  }/* else if (path == "WebSocketTest.html") {
-    File f = openFileR(path);
-    if (f) {
-      String contentType = getContentType(path);
-      server.streamFile(f, contentType);
-      f.close();
-    }
-  }*/ else return false;
-  return true;
-}
-
 bool handleRedirects(String path, int sessionIndex) {
   if (path == "/") {
     sendRedirect(307, "dashboard.html");
@@ -238,7 +216,6 @@ bool handleRedirects(String path, int sessionIndex) {
 bool handleRequest(String path) {
   int sessionIndex = sessionIndexFromCookie();
   if (handleRedirects(path, sessionIndex)) return true;
-  if (handleAdminRequest(path, sessionIndex)) return true;
   if (handleAPIRequest(path, sessionIndex)) return true;
   bool gz = false;
   if (!fileExists(path)) {
