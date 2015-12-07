@@ -6,14 +6,13 @@
 #include <Hash.h>
 #include <WebSocketsServer.h>
 
-const char WifiAPSSID[] = "3308-13";
+const char WifiAPSSID[] = "3308-13-Brian";
 IPAddress WifiAPIP(192, 168, 1, 1);
 const char WifiDOMAIN[] = "192.168.1.1";
 const char ServerURL[] = "http://192.168.1.1/";
 const int MAX_SESSIONS = 4;
-String sessions[MAX_SESSIONS][2];
 int sessionCount = 0;
-int websockets[MAX_SESSIONS]; //contains websocet numbers given a session index
+String sessions[MAX_SESSIONS][3];
 const String COOKIE_KEY = "SessionID=";
 ESP8266WebServer server(80);
 WebSocketsServer wsServer(81);
@@ -52,6 +51,7 @@ int addSession() {
   if (sessionCount >= MAX_SESSIONS) return -1;
   sessions[sessionCount][0] = randomSessionID();
   sessions[sessionCount][1] = server.arg("username");
+  sessions[sessionCount][2] = -1;
   return sessionCount++;
 }
 
@@ -60,6 +60,7 @@ void removeSession(int sessionIndex) {
   for (int i = sessionIndex; i < sessionCount - 1; i++) {
     sessions[i][0] = sessions[i + 1][0];
     sessions[i][1] = sessions[i + 1][1];
+    sessions[i][2] = sessions[i + 1][2];
   }
   sessionCount--;
 }
@@ -73,7 +74,7 @@ int sessionIndexFromID(String sessionID) {
 
 int sessionIndexFromWebsocket(int num) {
   for (int i = 0; i < sessionCount; i++) {
-    if (websockets[i] == num) return i;
+    if (sessions[i][2].toInt() == num) return i;
   }
   return -1;
 }
@@ -187,6 +188,10 @@ void sendRedirect(int code, String path) {
   server.send(code);
 }
 
+/*
+HTTP request handler functions
+*/
+
 String handleWhoAmI(int sessionIndex) {
   const int BUFFER_SIZE = JSON_OBJECT_SIZE(2);
   StaticJsonBuffer<BUFFER_SIZE> jsonBuffer;
@@ -196,10 +201,6 @@ String handleWhoAmI(int sessionIndex) {
   // {"success":true,"username":"12345678"}\0 = 39 chars
   return jsonEncode(root, 39);
 }
-
-/*
-HTTP request handler functions
-*/
 
 bool handleAPIRequest(String path, int sessionIndex) {
   if (!(path.startsWith("/api/"))) return false;
@@ -246,12 +247,42 @@ bool handleRequest(String path) {
 WebSocket functions
 */
 
+void wsHandleProtocolChat(String command, String body, uint8_t num) {
+  if (command == "message") {
+    for (int i = 0; i < sessionCount; i++) {
+      int sendToNum = sessions[i][2].toInt();
+      if (sendToNum != -1) {
+        wsServer.sendTXT(sendToNum, "chat:message:" + body);
+      }
+    }
+  }
+}
+
+void wsHandleProtocolGlobal(String command, String body, uint8_t num) {
+  if (command == "connect") {
+    int sessionIndex = sessionIndexFromID(body);
+    if (sessionIndex == -1) {
+      wsServer.sendTXT(num, "global:connect:fail");
+    } else {
+      sessions[sessionIndex][2] = String(num);
+      wsServer.sendTXT(num, "global:connect:success");
+    }
+  } else {
+    wsServer.sendTXT(num, "global:error:pleaseAuthenticate");
+  }
+}
+
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length) {
   switch (type) {
     case WStype_CONNECTED:
+      Serial.println("Connected to num: " + String(num));
       break;
-    case WStype_DISCONNECTED:
-      break;
+    case WStype_DISCONNECTED: {
+        int sessionIndex = sessionIndexFromWebsocket(num);
+        if (sessionIndex != -1) sessions[sessionIndex][2] = String(-1);
+        Serial.println("Disconnected from num: " + String(num));
+        break;
+      }
     case WStype_TEXT:
       String payloadString = String((char *)payload);
       String data[3];
@@ -270,29 +301,16 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
         index = payloadString.indexOf(":", startIndex);
       }
       data[2] = payloadString.substring(index, payloadString.length());
-      /*
-       *  data[0] is protocol
-       *  data[1] is command
-       *  data[2] is body
-       */
-      if (data[0] == "global" && data[1] == "connect") {
-        int index = sessionIndexFromID(data[2]); //get session index
-        if (index != -1) {
-          websockets[index] = num; //associate session with websocket number
-          wsServer.sendTXT(num, "global:connect:success");
-        } else wsServer.sendTXT(num, "global:connect:fail");
+
+      String protocol = data[0];
+      String command = data[1];
+      String body = data[2];
+
+      bool authenticated = (sessionIndexFromWebsocket(num) != -1);
+      if (authenticated) {
+        if (protocol == "chat") wsHandleProtocolChat(command, body, num);
       } else {
-        int sessionIndex = sessionIndexFromWebsocket(num);
-        if (sessionIndex == -1) wsServer.sendTXT(num, "not authenticated");
-        else {
-          /* authenticated, catch commands here */
-          if (data[0] == "chat" && data[1] == "message") {
-            for (int i = 0; i < sessionCount; i++) {
-              //wsServer.sendTXT(websockets[i], "chat:message:"+sessions[i][1]+":"+data[2]);
-              wsServer.sendTXT(websockets[i], "chat:message:" + data[2]);
-            }
-          }
-        }
+        if (protocol == "global") wsHandleProtocolGlobal(command, body, num);
       }
       break;
   }
