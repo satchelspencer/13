@@ -6,7 +6,7 @@
 #include <Hash.h>
 #include <WebSocketsServer.h>
 
-const char WifiAPSSID[] = "3308-13-Brian";
+const char WifiAPSSID[] = "3308-13";
 IPAddress WifiAPIP(192, 168, 1, 1);
 const char WifiDOMAIN[] = "192.168.1.1";
 const char ServerURL[] = "http://192.168.1.1/";
