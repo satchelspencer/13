@@ -252,7 +252,7 @@ void wsHandleProtocolChat(String command, String body, uint8_t num) {
     for (int i = 0; i < sessionCount; i++) {
       int sendToNum = sessions[i][2].toInt();
       if (sendToNum != -1) {
-        wsServer.sendTXT(sendToNum, "chat:message:" + body);
+        wsServer.sendTXT(sendToNum, "chat:message:" + sessions[i][1] + ";" + body);
       }
     }
   }

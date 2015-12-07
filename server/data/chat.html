@@ -32,7 +32,8 @@
 			});
 
 			socket.on('message', function(message){
-				$('#messages').append(message+'<br>');
+				var chunks = message.split(';');
+				$('#messages').append(chunks[0] + ': ' + decodeURIComponent(chunks[1])+'<br>');
 			});
 
 			$('.send').click(function(){
