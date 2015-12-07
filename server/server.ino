@@ -288,10 +288,9 @@ void wsHandleProtocolGlobal(String command, String body, uint8_t num) {
   if (command == "connect") {
     int sessionIndex = sessionIndexFromID(body);
     if (sessionIndex == -1) {
-      wsServer.sendTXT(num, "global:connect:fail");
+      wsServer.sendTXT(num, "global:error:connectionFailed");
     } else {
       sessions[sessionIndex][2] = String(num);
-      wsServer.sendTXT(num, "global:connect:success");
       String userlist = wsUserlist(sessionIndex);
       if (userlist.length() > 0) wsServer.sendTXT(num, "global:connect:" + userlist);
       String message = "global:connect:" + sessions[sessionIndex][1];
