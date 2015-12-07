@@ -247,15 +247,41 @@ bool handleRequest(String path) {
 WebSocket functions
 */
 
-void wsHandleProtocolChat(String command, String body, uint8_t num) {
-  if (command == "message") {
-    for (int i = 0; i < sessionCount; i++) {
-      int sendToNum = sessions[i][2].toInt();
-      if (sendToNum != -1) {
-        wsServer.sendTXT(sendToNum, "chat:message:" + sessions[i][1] + ";" + body);
-      }
+void wsSendToConnected(String message, int excludeIndex) {
+  for (int i = 0; i < sessionCount; i++) {
+    int sendToNum = sessions[i][2].toInt();
+    if (sendToNum != -1 && i != excludeIndex) {
+      wsServer.sendTXT(sendToNum, message);
     }
   }
+}
+
+String wsUserlist(int excludeIndex) {
+  String userlist = "";
+  bool notFirst = false;
+  for (int i = 0; i < sessionCount; i++) {
+    int sendToNum = sessions[i][2].toInt();
+    if (sendToNum != -1 && i != excludeIndex) {
+      if (notFirst) userlist += ";";
+      else notFirst = true;
+      userlist += sessions[i][1];
+    }
+  }
+  return userlist;
+}
+
+void wsHandleProtocolChat(String command, String body, uint8_t num) {
+  if (command == "message") {
+    int sessionIndex = sessionIndexFromWebsocket(num);
+    String message = "chat:message:" + sessions[sessionIndex][1] + ";" + body;
+    wsSendToConnected(message, -1);
+  }
+}
+
+void wsDisconnect(int sessionIndex) {
+  if (sessionIndex != -1) sessions[sessionIndex][2] = String(-1);
+  String message = "global:disconnect:" + sessions[sessionIndex][1];
+  wsSendToConnected(message, sessionIndex);
 }
 
 void wsHandleProtocolGlobal(String command, String body, uint8_t num) {
@@ -266,6 +292,15 @@ void wsHandleProtocolGlobal(String command, String body, uint8_t num) {
     } else {
       sessions[sessionIndex][2] = String(num);
       wsServer.sendTXT(num, "global:connect:success");
+      String userlist = wsUserlist(sessionIndex);
+      if (userlist.length() > 0) wsServer.sendTXT(num, "global:connect:" + userlist);
+      String message = "global:connect:" + sessions[sessionIndex][1];
+      wsSendToConnected(message, sessionIndex);
+    }
+  } else if (command == "disconnect") {
+    int sessionIndex = sessionIndexFromID(body);
+    if (sessionIndex != -1) {
+      wsDisconnect(sessionIndex);
     }
   } else {
     wsServer.sendTXT(num, "global:error:pleaseAuthenticate");
@@ -275,12 +310,10 @@ void wsHandleProtocolGlobal(String command, String body, uint8_t num) {
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length) {
   switch (type) {
     case WStype_CONNECTED:
-      Serial.println("Connected to num: " + String(num));
       break;
     case WStype_DISCONNECTED: {
         int sessionIndex = sessionIndexFromWebsocket(num);
-        if (sessionIndex != -1) sessions[sessionIndex][2] = String(-1);
-        Serial.println("Disconnected from num: " + String(num));
+        wsDisconnect(sessionIndex);
         break;
       }
     case WStype_TEXT:
@@ -309,6 +342,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
       bool authenticated = (sessionIndexFromWebsocket(num) != -1);
       if (authenticated) {
         if (protocol == "chat") wsHandleProtocolChat(command, body, num);
+        if (protocol == "global") wsHandleProtocolGlobal(command, body, num);
       } else {
         if (protocol == "global") wsHandleProtocolGlobal(command, body, num);
       }
