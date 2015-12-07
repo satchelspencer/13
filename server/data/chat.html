@@ -1,51 +1,123 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>Chat</title>
-	<script type="text/javascript" src="zepto.min.js"></script>
-	<script type="text/javascript" src="websockets.js"></script>
-	<script>
+    <title>layout</title>
+    <script type="text/javascript" src="zepto.min.js"></script>
+    <script type="text/javascript" src="websockets.js"></script>
+    <link rel='stylesheet' href="chat.css">
+    <script>
+    	$.fn.scrollToBottom = function(duration) {
+		    var $el = this;
+		    var el  = $el[0];
+		    var startPosition = el.scrollTop;
+		    var delta = el.scrollHeight - $el.height() - startPosition;
+
+		    var startTime = Date.now();
+
+		    function scroll() {
+		        var fraction = Math.min(1, (Date.now() - startTime) / duration);
+
+		        el.scrollTop = delta * fraction + startPosition;
+
+		        if(fraction < 1) {
+		            setTimeout(scroll, 10);
+		        }
+		    }
+		    scroll();
+		}; 
+
 		Zepto(function($) {
 			$.ajax({
 				type: 'GET',
 				url: '/api/whoami',
 				success: function(data, status, xhr) {
-					if (data.success) {
-						$('#username').text(data.username);
-					} else {
-						alert('Server error');
-					}
+					$('.username').text(data.username);
 				},
 				error: function(xhr, errorType, error) {
 					alert('Server error');
 				}
 			});
 
-			var socket = websocket('ws://192.168.1.1:81', 'chat');
+			var socket = websocket('ws://192.168.1.1:81');
+			
+			var chat = socket.in('chat');
+			var global = socket.in('global');
 
-			socket.error(function(error){
-				console.log('websocket error:'+error);
+			global.on('connect', function(users){
+				users = users.split(';');
+				for(var i in users){
+					if($('#'+users[i]).length) $('#'+users[i]).removeClass('offline');
+					else{
+						var el = $('.hidden .user').clone();
+						el.attr('id', users[i]);
+						el.append(users[i]);
+						$('.userlist').append(el);
+					}
+				}
 			});
 
-			socket.ready(function(){
-				console.log('websocket ready!');
+			global.on('disconnect', function(users){
+				users = users.split(';');
+				for(var i in users){
+					$('#'+users[i]).addClass('offline');
+				}
 			});
 
-			socket.on('message', function(message){
-				var chunks = message.split(';');
-				$('#messages').append(chunks[0] + ': ' + decodeURIComponent(chunks[1])+'<br>');
+			chat.on('message', function(body){
+				var split = body.split(';');
+				var el = $('.hidden .message').clone();
+				el.find('.messageUser').text(split[0]);
+				el.find('.messageTime').text((new Date).toString().match(/\d+:\d+:\d+/i)[0]);
+				el.find('.messageContent').append(decodeURIComponent(split[1]));
+				$('.content').append(el).scrollToBottom(350);
 			});
 
-			$('.send').click(function(){
-				socket.send('message', $('.chat').val());
-			});
+			function sendMessage(){
+				chat.send('message', $('.newMessage').val());
+				$('.newMessage').val('')
+			}
+
+			$('.send').click(sendMessage);
+
+			$('.newMessage').on('keyup', function(e){
+				if(e.keyCode == 13) sendMessage();
+			})
 		});
+
+		window.onbeforeunload = function() {
+			socket.leave();
+		}
 	</script>
 </head>
 <body>
-	<h1>Chat</h1>
-	<span>Logged in as </span><strong id="username"></strong>
-	<input type="text" class="chat"><span class="send">send</span>
-	<div id="messages"></div>
+    <div class="sidebar">
+    	<div class="header">
+    		Tiny Chat <span class="status">&#8226;</span>
+    	</div>
+    	<div class="username">sasp0821</div>
+    	<div class="users">
+    		<div class="userlist"></div>
+    	</div>
+    	<div class="dashboard"><div>&lsaquo;</div> dashboard</div>
+    </div>
+    <div class="content"></div>
+    <div class="footer">
+        <input class="newMessage">
+        <div class="send">+</div>
+    </div>
+    <div class="hidden">
+    	<div class="message">
+    		<div class="box"></div>
+    		<div class="messageContent">
+	    		<div class="info">
+	    			<span class="messageUser"></span>
+	    			<span class="messageTime"></span>
+	    		</div>
+    		</div>
+    	</div>
+    	<div class="user">
+    		<span class="status">&#8226;</span>
+    	</div>
+    </div>
 </body>
 </html>
