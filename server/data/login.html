@@ -6,6 +6,7 @@
 	<script>
 		Zepto(function($){
 			$('.login').click(function(){
+				$('.login').addClass('progress');
 				$.ajax({
 					type: 'POST',
 					url: '/api/login',
@@ -15,6 +16,7 @@
 					},
 					dataType: 'json',
 					success: function(data, status, xhr) {
+						$('.login').removeClass('progress');
 						if(data.success) {
 							$('.error').text('');
 							window.location.replace("chat.html");
@@ -65,6 +67,11 @@
 		    text-align: center;
 		    border-radius: 5px;
 		    cursor:pointer;
+		    transition:0.5s all;
+		}
+		.login.progress{
+		    opacity: 0.1;
+    		pointer-events: none;
 		}
 		.error{
 			margin-top: 10px;
