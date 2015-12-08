@@ -6,7 +6,8 @@
 #include <Hash.h>
 #include <WebSocketsServer.h>
 
-const char WifiAPSSID[] = "3308-13";
+const char WifiAPSSID[] = "tiny-team13";
+const char WifiAPPassword[] = "demopassword";
 IPAddress WifiAPIP(192, 168, 1, 1);
 const char WifiDOMAIN[] = "192.168.1.1";
 const char ServerURL[] = "http://192.168.1.1/";
@@ -523,8 +524,8 @@ void setup() {
   // Setup WiFi
   WiFi.mode(WIFI_AP);
   WiFi.softAPConfig(WifiAPIP, WifiAPIP, IPAddress(255, 255, 255, 0));
-  WiFi.softAP(WifiAPSSID);
-
+  WiFi.softAP(WifiAPSSID, WifiAPPassword);
+  
   // Serve a 404 if the filesystem can't be initialized
   if (!initializeFilesystem()) {
     server.onNotFound([]() {
