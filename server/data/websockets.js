@@ -9,7 +9,6 @@ var websocket = function(host){
 	/* object with command listeners */
 	var events = {};
 	var error = function(){};
-​
 	socket.onopen = function(evt) {
 		/* establish credentials with server */
 		socket.send('global:connect:'+document.cookie.split('=')[1]);
@@ -27,7 +26,7 @@ var websocket = function(host){
 	socket.onclose = function(evt){
 		error(evt.data);
 	};
-​
+
 	/**
 	 * connection object, contains methods for manipulating websocket connection
 	*/
