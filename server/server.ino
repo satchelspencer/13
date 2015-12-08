@@ -312,7 +312,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
       break;
     case WStype_DISCONNECTED: {
         int sessionIndex = sessionIndexFromWebsocket(num);
-        wsDisconnect(sessionIndex);
+        if (sessionIndex != -1) wsDisconnect(sessionIndex);
         break;
       }
     case WStype_TEXT:

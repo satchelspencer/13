@@ -105,11 +105,11 @@
                     }
                 });
 			});
+			
+			window.onbeforeunload = function() {
+				socket.leave();
+			}
 		});
-
-		window.onbeforeunload = function() {
-			socket.leave();
-		}
 	</script>
 </head>
 <body>
