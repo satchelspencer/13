@@ -21,13 +21,30 @@ WebSocketsServer wsServer(81);
 Filesystem functions
 */
 
+/**
+ * check if a given path exists in the file system
+ * @param path the path to check
+ * @return true if the file exists, false if the file does not exist
+ */
+
 bool fileExists(String path) {
   return SPIFFS.exists(path);
 }
 
+/**
+ * open a file from the file system given a path
+ * @param path the path to the file
+ * @return the opened File
+ */
+
 File openFileR(String path) {
   return SPIFFS.open(path, "r");
 }
+
+/**
+ * initialize the file system
+ * @return true if initialized successfully, false if unsuccessful
+ */
 
 bool initializeFilesystem() {
   return SPIFFS.begin();
@@ -36,6 +53,11 @@ bool initializeFilesystem() {
 /*
 Session functions
 */
+
+/**
+ * generate a random 16 byte hex string for use as a session ID
+ * @return the random 16 byte hex string
+ */
 
 String randomSessionID() {
   char bytes[16];
@@ -47,6 +69,11 @@ String randomSessionID() {
   return hexString;
 }
 
+/**
+ * adds a new session to the session data structure and increments sessionCount
+ * @return the index of the session that was added
+ */
+
 int addSession() {
   if (sessionCount >= MAX_SESSIONS) return -1;
   sessions[sessionCount][0] = randomSessionID();
@@ -54,6 +81,11 @@ int addSession() {
   sessions[sessionCount][2] = -1;
   return sessionCount++;
 }
+
+/**
+ * removes a session from the session data structure, ensures the remaining sessions are contiguous in memory, and decrements sessionCount
+ * @param sessionIndex the session to remove
+ */
 
 void removeSession(int sessionIndex) {
   if (sessionIndex >= sessionCount) return;
@@ -65,6 +97,12 @@ void removeSession(int sessionIndex) {
   sessionCount--;
 }
 
+/**
+ * get a session index given a session ID
+ * @param sessionID the session ID to look for in current sessions
+ * @return the session index for the session ID
+ */
+
 int sessionIndexFromID(String sessionID) {
   for (int i = 0; i < sessionCount; i++) {
     if (sessions[i][0] == sessionID) return i;
@@ -72,12 +110,23 @@ int sessionIndexFromID(String sessionID) {
   return -1;
 }
 
+/**
+ * get a session index given a websocket num
+ * @param num the websocket num to look for in current sessions
+ * @return the session index for the websocket num
+ */
+
 int sessionIndexFromWebsocket(int num) {
   for (int i = 0; i < sessionCount; i++) {
     if (sessions[i][2].toInt() == num) return i;
   }
   return -1;
 }
+
+/**
+ * gets the current session index using the cookie header
+ * @return the current session index
+ */
 
 int sessionIndexFromCookie() {
   int sessionIndex = -1;
@@ -93,6 +142,12 @@ int sessionIndexFromCookie() {
   return sessionIndex;
 }
 
+/**
+ * tells a client to set or remove its session cookie
+ * @param sessionIndex the session index of the client
+ * @param expire whether to expire the cookie or not
+ */
+
 void sendSessionCookie(int sessionIndex, bool expire) {
   String sessionCookie = COOKIE_KEY;
   if (!expire) sessionCookie += sessions[sessionIndex][0];
@@ -106,6 +161,13 @@ void sendSessionCookie(int sessionIndex, bool expire) {
 /*
 Login/out functions
 */
+
+/**
+ * authenticates a user using the user database given a username and password
+ * @param username the user's username
+ * @param password the user's password
+ * @return true if authentication is successful, false otherwise
+ */
 
 bool authenticateUser(String username, String password) {
   File f = openFileR("/db_users.csv");
@@ -132,6 +194,11 @@ bool authenticateUser(String username, String password) {
   return false;
 }
 
+/**
+ * handles the API for login attempts
+ * @return a JSON string responding to the login attempt
+ */
+
 String handleLogin() {
   bool loginSuccessful = authenticateUser(server.arg("username"), server.arg("password"));
   const int BUFFER_SIZE = JSON_OBJECT_SIZE(2);
@@ -150,6 +217,12 @@ String handleLogin() {
   // error 1: bad credentials, error 2: no available sessions
   return jsonEncode(root, 28);
 }
+
+/**
+ * handles the API for logging out
+ * @param sessionIndex the session index of the client to log out
+ * @return a JSON string responding to the logout attempt
+ */
 
 String handleLogout(int sessionIndex) {
   const int BUFFER_SIZE = JSON_OBJECT_SIZE(1);
@@ -170,6 +243,12 @@ String handleLogout(int sessionIndex) {
 Utility functions
 */
 
+/**
+ * get a content type given a file path
+ * @param path the path of the file to check
+ * @return the content type of a file
+ */
+
 String getContentType(String path) {
   if (path.endsWith(".html")) return "text/html";
   else if (path.endsWith(".js")) return "application/javascript";
@@ -177,11 +256,24 @@ String getContentType(String path) {
   return "text/plain";
 }
 
+/**
+ * encode a JsonObject to a string
+ * @param root the JSON object to encode
+ * @param maxOutputLength the maximum length of the encoded string (include null termination char)
+ * @return a JSON string containing the provided object
+ */
+
 String jsonEncode(JsonObject& root, int maxOutputLength) {
   char output[maxOutputLength];
   root.printTo(output, maxOutputLength);
   return String(output);
 }
+
+/**
+ * sends a redirect header and status code to the client
+ * @param code the status code to send
+ * @param path the URL path to redirect to
+ */
 
 void sendRedirect(int code, String path) {
   server.sendHeader("Location", ServerURL + path, true);
@@ -192,6 +284,12 @@ void sendRedirect(int code, String path) {
 HTTP request handler functions
 */
 
+/**
+ * handles the whoami API
+ * @param sessionIndex the client's session index
+ * @return a JSON string with the client's username
+ */
+
 String handleWhoAmI(int sessionIndex) {
   const int BUFFER_SIZE = JSON_OBJECT_SIZE(2);
   StaticJsonBuffer<BUFFER_SIZE> jsonBuffer;
@@ -201,6 +299,13 @@ String handleWhoAmI(int sessionIndex) {
   // {"success":true,"username":"12345678"}\0 = 39 chars
   return jsonEncode(root, 39);
 }
+
+/**
+ * sorts and selects appropriate handler if a server request is an API request
+ * @param path the path of the request
+ * @param sessionIndex the client's session index
+ * @return true if request is handled as an API request, false otherwise
+ */
 
 bool handleAPIRequest(String path, int sessionIndex) {
   if (!(path.startsWith("/api/"))) return false;
@@ -214,12 +319,25 @@ bool handleAPIRequest(String path, int sessionIndex) {
   return true;
 }
 
+/**
+ * handles redirection of a client if needed to force login
+ * @param path the path of the request
+ * @param sessionIndex the client's session index
+ * @return true if request is handled with a redirect, false otherwise
+ */
+
 bool handleRedirects(String path, int sessionIndex) {
   if (sessionIndex == -1 && !path.endsWith(".js") && !path.endsWith(".css") && path != "/login.html" && path != "/api/login") {
     sendRedirect(307, "login.html");
   } else return false;
   return true;
 }
+
+/**
+ * sorts and selects appropriate handler for all server requests, serves static files
+ * @param the path of the request
+ * @return true if request is handled, false otherwise
+ */
 
 bool handleRequest(String path) {
   int sessionIndex = sessionIndexFromCookie();
@@ -247,6 +365,12 @@ bool handleRequest(String path) {
 WebSocket functions
 */
 
+/**
+ * sends a message to all authenticated websocket clients except for one (if needed)
+ * @param message the message to send
+ * @param excludeIndex the session index of the client that should be excluded (int < 0 to send to all clients)
+ */
+
 void wsSendToConnected(String message, int excludeIndex) {
   for (int i = 0; i < sessionCount; i++) {
     int sendToNum = sessions[i][2].toInt();
@@ -255,6 +379,13 @@ void wsSendToConnected(String message, int excludeIndex) {
     }
   }
 }
+
+/**
+ * creates a list of authenticated websocket clients except for one (if needed)
+ * @param path the path of the request
+ * @param excludeIndex the session index of the client that should be excluded (int < 0 to include all clients)
+ * @return a semicolon separated string of authenticated users' usernames
+ */
 
 String wsUserlist(int excludeIndex) {
   String userlist = "";
@@ -270,6 +401,13 @@ String wsUserlist(int excludeIndex) {
   return userlist;
 }
 
+/**
+ * handles the websocket chat protocol (broadcasts messages)
+ * @param command the chat protocol command
+ * @param body the chat protocol body
+ * @param num a websocket client num
+ */
+
 void wsHandleProtocolChat(String command, String body, uint8_t num) {
   if (command == "message") {
     int sessionIndex = sessionIndexFromWebsocket(num);
@@ -278,11 +416,23 @@ void wsHandleProtocolChat(String command, String body, uint8_t num) {
   }
 }
 
+/**
+ * disconnects an authenticated websocket client
+ * @param sessionIndex the client's sessionIndex
+ */
+
 void wsDisconnect(int sessionIndex) {
   if (sessionIndex != -1) sessions[sessionIndex][2] = String(-1);
   String message = "global:disconnect:" + sessions[sessionIndex][1];
   wsSendToConnected(message, sessionIndex);
 }
+
+/**
+ * handles the websocket global protocol (connection, authentication and disconnection)
+ * @param command the global protocol command
+ * @param body the global protocol body
+ * @param num a websocket client num
+ */
 
 void wsHandleProtocolGlobal(String command, String body, uint8_t num) {
   if (command == "connect") {
@@ -305,6 +455,14 @@ void wsHandleProtocolGlobal(String command, String body, uint8_t num) {
     wsServer.sendTXT(num, "global:error:pleaseAuthenticate");
   }
 }
+
+/**
+ * main websocket event handler (connect, disconnect, and text payloads)
+ * @param num a websocket client num (sequential unique identifier for websocket client)
+ * @param type a websocket event type
+ * @param payload a websocket event payload
+ * @param length the length of the websocket event payload
+ */
 
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length) {
   switch (type) {
@@ -353,6 +511,10 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 Setup and loop functions
 */
 
+/**
+ * runs necessary functions for server setup
+ */
+
 void setup() {
   // Setup Serial communication
   Serial.begin(115200);
@@ -387,6 +549,10 @@ void setup() {
   wsServer.onEvent(webSocketEvent);
   Serial.println("Server started");
 }
+
+/**
+ * the server loop (runs repeatedly to handle requests)
+ */
 
 void loop() {
   server.handleClient();
